@@ -204,16 +204,20 @@ tr.cat-learning td { border-left: 3px solid #FFC000; }
         <div class="card-title"><span class="dot" style="background:#E53935"></span>Key Opportunities - Below Target</div>
         <div class="insight-cards" id="opportunities-grid"></div>
     </div>
+    <div class="card" style="margin-top:20px">
+        <div class="card-title"><span class="dot" style="background:#0070F2"></span>KPI Status Movement Q1 to Q2</div>
+        <div class="filters" style="margin-bottom:12px;">
+            <div class="filter-group"><label>Market Unit</label><select id="filter-movement-mu" onchange="renderStatusMovement()"><option value="AMER Total">AMER Total</option><option value="LAC">LAC</option><option value="Midwest">Midwest</option><option value="NE & Canada">NE & Canada</option><option value="US Pub Svcs">US Pub Svcs</option><option value="South">South</option><option value="West">West</option></select></div>
+            <div class="filter-group"><label>View</label><select id="filter-movement-dir" onchange="renderStatusMovement()"><option value="all">All Changes</option><option value="upgraded">Upgraded Only</option><option value="downgraded">Downgraded Only</option></select></div>
+        </div>
+        <div class="chart-container tall"><canvas id="chart-status-movement"></canvas></div>
+        <div class="table-wrap" id="status-movement-table" style="margin-top:16px;"></div>
+    </div>
 </div>
 
 <!-- ENTERPRISE TAB -->
 <div class="tab-content" id="tab-enterprise">
-    <div class="cat-legend">
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#0070F2"></div>Business Impact</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#7C3AED"></div>Tool Adoption</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#00B050"></div>Coverage</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#FFC000"></div>Learning</div>
-    </div>
+
     <div class="filters">
         <div class="filter-group"><label>Role</label><select id="filter-ent-role" onchange="renderSegment('enterprise')"><option value="">All Roles</option></select></div>
         <div class="filter-group"><label>Category</label><select id="filter-ent-cat" onchange="renderSegment('enterprise')"><option value="">All Categories</option></select></div>
@@ -230,12 +234,7 @@ tr.cat-learning td { border-left: 3px solid #FFC000; }
 
 <!-- CORPORATE TAB -->
 <div class="tab-content" id="tab-corporate">
-    <div class="cat-legend">
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#0070F2"></div>Business Impact</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#7C3AED"></div>Tool Adoption</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#00B050"></div>Coverage</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#FFC000"></div>Learning</div>
-    </div>
+
     <div class="filters">
         <div class="filter-group"><label>Role</label><select id="filter-corp-role" onchange="renderSegment('corporate')"><option value="">All Roles</option></select></div>
         <div class="filter-group"><label>Category</label><select id="filter-corp-cat" onchange="renderSegment('corporate')"><option value="">All Categories</option></select></div>
@@ -252,12 +251,7 @@ tr.cat-learning td { border-left: 3px solid #FFC000; }
 
 <!-- SOL.SPEC TAB -->
 <div class="tab-content" id="tab-solspec">
-    <div class="cat-legend">
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#0070F2"></div>Business Impact</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#7C3AED"></div>Tool Adoption</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#00B050"></div>Coverage</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#FFC000"></div>Learning</div>
-    </div>
+
     <div class="filters">
         <div class="filter-group"><label>Role</label><select id="filter-ss-role" onchange="renderSegment('solspec')"><option value="">All Roles</option></select></div>
         <div class="filter-group"><label>Category</label><select id="filter-ss-cat" onchange="renderSegment('solspec')"><option value="">All Categories</option></select></div>
@@ -274,12 +268,7 @@ tr.cat-learning td { border-left: 3px solid #FFC000; }
 
 <!-- SOLA MATRIX TAB -->
 <div class="tab-content" id="tab-sola">
-    <div class="cat-legend">
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#0070F2"></div>Business Impact</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#7C3AED"></div>Tool Adoption</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#00B050"></div>Coverage</div>
-        <div class="cat-legend-item"><div class="cat-legend-dot" style="background:#FFC000"></div>Learning</div>
-    </div>
+
     <div class="filters">
         <div class="filter-group"><label>Role</label><select id="filter-sola-role" onchange="renderSolA()"><option value="">All Roles</option></select></div>
         <div class="filter-group"><label>Solution Area</label><select id="filter-sola-mu" onchange="renderSolA()"><option value="">AMER Total</option><option value="BTP">BTP</option><option value="Data & AI">Data & AI</option><option value="F&S">F&S</option><option value="HCM">HCM</option><option value="SCM">SCM</option><option value="CX">CX</option><option value="BTM">BTM</option></select></div>
@@ -619,6 +608,193 @@ function renderSummary() {
         </div>`;
     });
     document.getElementById('opportunities-grid').innerHTML = opHtml;
+
+    // Status movement is handled by renderStatusMovement() called below
+
+    renderStatusMovement();
+}
+
+function renderStatusMovement() {
+    const mu = document.getElementById('filter-movement-mu').value;
+    const dir = document.getElementById('filter-movement-dir').value;
+    const deltaCol = '\u0394 ' + (mu === 'AMER Total' ? 'AMER' : mu);
+    const valCol = mu;
+
+    // Gather all KPIs across segments that have delta data for this MU
+    const movements = [];
+    ['enterprise', 'corporate', 'solspec'].forEach(segKey => {
+        DATA[segKey].data.forEach(row => {
+            const val = row[valCol];
+            const delta = row[deltaCol];
+            const target = row['Target'];
+            if (!val || !target || val === 'N/A' || target === 'N/A' || target === 'TBD' || target === 'TBD*') return;
+            if (!delta || delta === '\u2014' || delta === 'N/A' || delta === '' || delta === '0') return;
+
+            const valStr = String(val);
+            const deltaStr = String(delta);
+            const targetStr = String(target);
+
+            // Skip ratio KPIs
+            if (valStr.includes(':') || targetStr.includes(':') || deltaStr.includes(':')) return;
+
+            let q2Val, deltaVal, targetVal;
+            let dStr = deltaStr.replace('%', '').replace('+', '');
+            try {
+                q2Val = parseFloat(valStr);
+                deltaVal = parseFloat(dStr);
+                targetVal = parseFloat(targetStr);
+            } catch(e) { return; }
+            if (isNaN(q2Val) || isNaN(deltaVal) || isNaN(targetVal) || targetVal === 0) return;
+
+            // If delta was stored as percentage text (like '-4%'), convert
+            if (deltaStr.includes('%')) {
+                deltaVal = deltaVal / 100;
+            }
+
+            const q1Val = q2Val - deltaVal;
+            const q2Att = q2Val / targetVal;
+            const q1Att = q1Val / targetVal;
+
+            const getStatus = att => att >= 1 ? 'On/Above Target' : att >= 0.7 ? 'Near Target' : 'Below Target';
+            const q1Status = getStatus(q1Att);
+            const q2Status = getStatus(q2Att);
+            const sRank = {'Below Target': 0, 'Near Target': 1, 'On/Above Target': 2};
+
+            if (sRank[q1Status] !== sRank[q2Status]) {
+                movements.push({
+                    kpi: row['KPI Name'],
+                    role: row['Role'],
+                    segment: segKey,
+                    q1Att: q1Att,
+                    q2Att: q2Att,
+                    q1Status: q1Status,
+                    q2Status: q2Status,
+                    direction: sRank[q2Status] > sRank[q1Status] ? 'upgraded' : 'downgraded'
+                });
+            }
+        });
+    });
+
+    // Filter by direction
+    let filtered = movements;
+    if (dir === 'upgraded') filtered = movements.filter(m => m.direction === 'upgraded');
+    if (dir === 'downgraded') filtered = movements.filter(m => m.direction === 'downgraded');
+
+    // Update the upgrade/downgrade summary tables too
+    const upgradedItems = movements.filter(m => m.direction === 'upgraded');
+    const downgradedItems = movements.filter(m => m.direction === 'downgraded');
+    const sColor = s => s === 'On/Above Target' ? '#00B050' : s === 'Near Target' ? '#FFC000' : '#E53935';
+
+    function movementTableHtml(items, direction) {
+        if (items.length === 0) return '<p style="color:#999;font-size:13px;">No status changes found for this Market Unit.</p>';
+        let h = '<table><thead><tr><th>Role</th><th>KPI</th><th>Q1 Status</th><th>Q2 Status</th><th>Q1 Att.</th><th>Q2 Att.</th></tr></thead><tbody>';
+        items.forEach(m => {
+            const arrow = direction === 'up' ? '&#9650;' : '&#9660;';
+            const q1Badge = `<span style="background:${sColor(m.q1Status)};color:${m.q1Status==='Near Target'?'#000':'#fff'};padding:2px 8px;border-radius:4px;font-size:11px;">${m.q1Status}</span>`;
+            const q2Badge = `<span style="background:${sColor(m.q2Status)};color:${m.q2Status==='Near Target'?'#000':'#fff'};padding:2px 8px;border-radius:4px;font-size:11px;">${arrow} ${m.q2Status}</span>`;
+            h += `<tr><td>${m.role}</td><td>${m.kpi}</td><td>${q1Badge}</td><td>${q2Badge}</td><td>${Math.round(m.q1Att*100)}%</td><td>${Math.round(m.q2Att*100)}%</td></tr>`;
+        });
+        h += '</tbody></table>';
+        return h;
+    }
+    // Status movement upgrade/downgrade summary shown in chart table below
+
+    // Build chart - floating bars connecting Q1 to Q2 (dumbbell style)
+    destroyChart('chart-status-movement');
+
+    if (filtered.length === 0) {
+        document.getElementById('chart-status-movement').parentElement.style.display = 'none';
+        document.getElementById('status-movement-table').innerHTML = '<p style="color:#999;font-size:13px;padding:12px;">No status changes found for this Market Unit.</p>';
+        return;
+    }
+    document.getElementById('chart-status-movement').parentElement.style.display = '';
+
+    const labels = filtered.map(m => m.kpi.length > 40 ? m.kpi.substring(0, 40) + '...' : m.kpi);
+
+    // Floating bars: each bar goes from Q1 to Q2 attainment
+    // Color: green if upgraded, red if downgraded
+    const barData = filtered.map(m => [Math.min(m.q1Att, m.q2Att), Math.max(m.q1Att, m.q2Att)]);
+    const barColors = filtered.map(m => m.direction === 'upgraded' ? 'rgba(0,176,80,0.3)' : 'rgba(229,57,53,0.3)');
+    const barBorders = filtered.map(m => m.direction === 'upgraded' ? '#00B050' : '#E53935');
+
+    charts['chart-status-movement'] = new Chart(document.getElementById('chart-status-movement'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Q1',
+                    data: filtered.map(m => m.q1Att),
+                    type: 'scatter',
+                    pointRadius: 8,
+                    pointStyle: 'circle',
+                    backgroundColor: filtered.map(m => sColor(m.q1Status)),
+                    borderColor: '#333',
+                    borderWidth: 1,
+                    legendBackgroundColor: '#6B7280'
+                },
+                {
+                    label: 'Q2',
+                    data: filtered.map(m => m.q2Att),
+                    type: 'scatter',
+                    pointRadius: 8,
+                    pointStyle: 'triangle',
+                    backgroundColor: filtered.map(m => sColor(m.q2Status)),
+                    borderColor: '#333',
+                    borderWidth: 1,
+                    legendBackgroundColor: '#374151'
+                },
+                {
+                    label: 'Change',
+                    data: barData,
+                    backgroundColor: barColors,
+                    borderColor: barBorders,
+                    borderWidth: 1,
+                    borderRadius: 2,
+                    borderSkipped: false,
+                    barPercentage: 0.4,
+                    legendBackgroundColor: '#9CA3AF'
+                }
+            ]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 11 }, usePointStyle: true, generateLabels: chart => chart.data.datasets.map((ds, i) => ({ text: ds.label, pointStyle: ds.pointStyle || 'rect', fillStyle: ds.legendBackgroundColor || '#9CA3AF', strokeStyle: '#333', lineWidth: 1, datasetIndex: i })) } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            if (ctx.datasetIndex < 2) return `${ctx.dataset.label}: ${Math.round(ctx.raw * 100)}%`;
+                            return `Range: ${Math.round(ctx.raw[0]*100)}% - ${Math.round(ctx.raw[1]*100)}%`;
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        line70: { type: 'line', xMin: 0.7, xMax: 0.7, borderColor: '#FFC000', borderWidth: 2, borderDash: [6, 4], label: { display: true, content: '70%', position: 'start', backgroundColor: '#FFC000', color: '#000', font: { size: 10, weight: 'bold' } } },
+                        line100: { type: 'line', xMin: 1.0, xMax: 1.0, borderColor: '#00B050', borderWidth: 2, borderDash: [6, 4], label: { display: true, content: '100%', position: 'start', backgroundColor: '#00B050', color: '#fff', font: { size: 10, weight: 'bold' } } }
+                    }
+                }
+            },
+            scales: {
+                x: { beginAtZero: true, max: 1.4, ticks: { callback: v => Math.round(v * 100) + '%' } },
+                y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+            }
+        }
+    });
+
+    // Detail table
+    let tblHtml = '<table><thead><tr><th>Role</th><th>KPI</th><th>Q1 Status</th><th>Q2 Status</th><th>Q1 Att.</th><th>Q2 Att.</th><th>Change</th></tr></thead><tbody>';
+    filtered.forEach(m => {
+        const arrow = m.direction === 'upgraded' ? '<span style="color:#00B050;font-weight:700;">&#9650; Upgraded</span>' : '<span style="color:#E53935;font-weight:700;">&#9660; Downgraded</span>';
+        const q1Badge = `<span style="background:${sColor(m.q1Status)};color:${m.q1Status==='Near Target'?'#000':'#fff'};padding:2px 8px;border-radius:4px;font-size:11px;">${m.q1Status}</span>`;
+        const q2Badge = `<span style="background:${sColor(m.q2Status)};color:${m.q2Status==='Near Target'?'#000':'#fff'};padding:2px 8px;border-radius:4px;font-size:11px;">${m.q2Status}</span>`;
+        tblHtml += `<tr><td>${m.role}</td><td>${m.kpi}</td><td>${q1Badge}</td><td>${q2Badge}</td><td>${Math.round(m.q1Att*100)}%</td><td>${Math.round(m.q2Att*100)}%</td><td>${arrow}</td></tr>`;
+    });
+    tblHtml += '</tbody></table>';
+    document.getElementById('status-movement-table').innerHTML = tblHtml;
 }
 
 // ===== SEGMENT RENDERING (Enterprise, Corporate, Sol.Spec) =====
